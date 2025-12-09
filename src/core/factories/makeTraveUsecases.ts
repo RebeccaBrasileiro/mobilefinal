@@ -6,6 +6,7 @@ import { RegisterTravel } from '../domain/use-cases/RegisterTravel';
 import { UpdateTravel } from '../domain/use-cases/UpdateTravel';
 import { MockTravelRepository } from '../infra/repositories/MockTravelRepository';
 import { FindAllTravel } from '../domain/use-cases/FindAllTravel';
+import { FindTravelByUserId } from '../domain/use-cases/FindTravelByUserId';
 import { SupabaseTravelRepository } from '../infra/repositories/supabaseTravelRepository';
 
 import {UploadFileUseCase} from "../domain/use-cases/UploadFile"
@@ -18,11 +19,14 @@ export function makeTravelUseCases() {
      ? HybridTravelRepository.getInstance()
     : MockTravelRepository.getInstance();
 
+  console.log(`[makeTravelUseCases] Created with EXPO_PUBLIC_USE_API=${process.env.EXPO_PUBLIC_USE_API}`);
+
   const registerTravel= new RegisterTravel(travelRepository);
   const updateTravel= new UpdateTravel(travelRepository);
   const deleteTravel = new DeleteTravel(travelRepository);
   const findTravel= new FindTravel(travelRepository);
   const findAllTravel = new FindAllTravel(travelRepository)
+  const findTravelByUserId = new FindTravelByUserId(travelRepository)
 
   const supabaseStorageRepository = new SupabaseStorageService
   const uploadFile = new UploadFileUseCase(supabaseStorageRepository)
@@ -34,7 +38,7 @@ export function makeTravelUseCases() {
     deleteTravel,
     findTravel,
     findAllTravel,
-
+    findTravelByUserId,
 
     uploadFile,
     deleteFile

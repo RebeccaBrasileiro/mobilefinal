@@ -30,10 +30,10 @@ export class HybridTravelRepository implements ITravelRepository {
     if (await this.isOnline()) {
       try {
         await this.onlineRepo.save(travel);
-        // await this.offlineRepo.save(travel);
+        await this.offlineRepo.save(travel);
       } catch (error) {
         console.warn('Online save failed, falling back to offline.', error);
-        // await this.offlineRepo.save(travel);
+        await this.offlineRepo.save(travel);
       }
     } else {
       await this.offlineRepo.save(travel);
@@ -56,7 +56,26 @@ export class HybridTravelRepository implements ITravelRepository {
 
   async findByUserId(userId: string): Promise<Travel[]> {
     if (await this.isOnline()) {
-      return this.onlineRepo.findByUserId(userId);
+      try {
+        // Get data from online repo
+        const onlineData = await this.onlineRepo.findByUserId(userId);
+        
+        // Also get pending local data that hasn't been synced yet
+        const localData = await this.offlineRepo.findByUserId(userId);
+        
+        // Filter local data to only include pending items
+        const pendingLocal = localData.filter(item => {
+          // Check if this item exists online
+          const existsOnline = onlineData.some(online => online.id === item.id);
+          return !existsOnline;
+        });
+        
+        // Merge online data with pending local data
+        return [...onlineData, ...pendingLocal];
+      } catch (error) {
+        console.warn('Error fetching online data, falling back to offline.', error);
+        return this.offlineRepo.findByUserId(userId);
+      }
     } else
       return this.offlineRepo.findByUserId(userId);
   }
@@ -65,10 +84,10 @@ export class HybridTravelRepository implements ITravelRepository {
     if (await this.isOnline()) {
       try {
         await this.onlineRepo.update(travel);
-        // await this.offlineRepo.update(travel);
+        await this.offlineRepo.update(travel);
       } catch (error) {
         console.warn('Online update failed, falling back to offline.', error);
-        // await this.offlineRepo.update(travel);
+        await this.offlineRepo.update(travel);
       }
     } else {
       await this.offlineRepo.update(travel);
@@ -79,10 +98,10 @@ export class HybridTravelRepository implements ITravelRepository {
     if (await this.isOnline()) {
       try {
         await this.onlineRepo.delete(id);
-        // await this.offlineRepo.delete(id);
+        await this.offlineRepo.delete(id);
       } catch (error) {
         console.warn('Online delete failed, falling back to offline.', error);
-        // await this.offlineRepo.delete(id);
+        await this.offlineRepo.delete(id);
       }
     } else {
       await this.offlineRepo.delete(id);

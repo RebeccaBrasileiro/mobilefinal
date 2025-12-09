@@ -18,7 +18,7 @@ import { TravelTypes } from "../../navigations/DetailsStackNavigation";
 import * as Location from 'expo-location';
 
 export default function PublicacoesScreen({ navigation }: TravelTypes) {
-  const { setLogin } = useAuth();
+  const { setLogin, user } = useAuth();
   const [records, setRecords] = useState<Travel[]>([]);
   const [busca, setBusca] = useState("");
   const [dicasFiltradas, setDicasFiltradas] = useState<Travel[]>([]);
@@ -28,24 +28,35 @@ export default function PublicacoesScreen({ navigation }: TravelTypes) {
     useCallback(() => {
       async function fetchRecords() {
         try {
-          const allRecords = await travelUsecases.findAllTravel.execute();
+          const userId = user?.id;
+          if (!userId) {
+            console.log('Usuário não autenticado');
+            return;
+          }
+
+          const allRecords = await travelUsecases.findTravelByUserId.execute(userId);
+
+          console.log(`[Publicacoes] Found ${allRecords?.length} records for user ${userId}`);
+          console.log(`[Publicacoes] Current user name: ${user?.name?.value}`);
 
           const normalized =  (allRecords ?? []).map( (item) => {
+            // Se a viagem não tiver nome de usuário (Usuário desconhecido), usa o nome do usuário logado
+            const hasValidUserName = item.user?.name?.value && item.user.name.value !== 'Usuário desconhecido';
+            const finalUserName = hasValidUserName ? item.user.name.value : (user?.name?.value || 'Usuário desconhecido');
             
-            if (item.location){
-            //   const address =  await Location.reverseGeocodeAsync(item.location)
-            // console.log(address.formattedAddress)
-              return ({
-                ...item,
-                date:
-                  item.date instanceof Date ? item.date : new Date(item.date),
-              })}
-            else
-              return ({
-                ...item,
-                date:
-                  item.date instanceof Date ? item.date : new Date(item.date),
-              });
+            console.log(`[Publicacoes] Travel ${item.id}: original name="${item.user?.name?.value}", final name="${finalUserName}"`);
+            
+            const itemWithUserName = {
+              ...item,
+              user: {
+                ...item.user,
+                name: {
+                  value: finalUserName
+                }
+              },
+              date: item.date instanceof Date ? item.date : new Date(item.date),
+            };
+            return itemWithUserName;
           })
           setRecords(normalized);
           setDicasFiltradas(normalized);
@@ -112,12 +123,12 @@ export default function PublicacoesScreen({ navigation }: TravelTypes) {
                       : new Date(item.date),
                   user: item.user,
                   photo: item.photo,
-                  location: item.user.location
+                  location: item.user?.location
                 },
               })
             }
           >
-            <Text style={styles.nome}>{item.user.name?.value}</Text>
+            <Text style={styles.nome}>{item.user?.name?.value || 'Usuário desconhecido'}</Text>
             <Text style={styles.data}>{formatDate(item.date)}</Text>
             <Text style={styles.titulo}>{item.title}</Text>
             {item.photo?.url ? (

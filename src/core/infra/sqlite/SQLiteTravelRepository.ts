@@ -21,11 +21,10 @@ export class SQLiteTravelRepository implements ITravelRepository {
 
   async save(travel: Travel): Promise<void> {
     const db = await DatabaseConnection.getConnection();
-    const id = travel.id || uuid();
 
     await db.runAsync(
       'INSERT INTO travels (id, title, description, date, user_id, latitude, longitude, photo_url, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      id,
+      travel.id,
       travel.title,
       travel.description,
       travel.date.toISOString(),
@@ -40,7 +39,7 @@ export class SQLiteTravelRepository implements ITravelRepository {
   async findById(id: string): Promise<Travel | null> {
     const db = await DatabaseConnection.getConnection();
     const travelRow = await db.getFirstAsync<any>(
-      'SELECT * FROM travels WHERE id = ?',
+      'SELECT t.*, u.name as user_name, u.email as user_email FROM travels t LEFT JOIN users u ON t.user_id = u.id WHERE t.id = ?',
       id
     );
 
@@ -52,16 +51,23 @@ export class SQLiteTravelRepository implements ITravelRepository {
 
   async findAll(): Promise<Travel[]> {
     const db = await DatabaseConnection.getConnection();
-    const travelRows = await db.getAllAsync<any>('SELECT * FROM travels');
+    const travelRows = await db.getAllAsync<any>(
+      'SELECT t.*, u.name as user_name, u.email as user_email FROM travels t LEFT JOIN users u ON t.user_id = u.id'
+    );
     return travelRows.map(travelRow => this.mapRowToTravel(travelRow));
   }
 
   async findByUserId(userId: string): Promise<Travel[]> {
     const db = await DatabaseConnection.getConnection();
+    console.log(`[SQLiteTravelRepository] Finding travels for user: ${userId}`);
     const travelRows = await db.getAllAsync<any>(
-      'SELECT * FROM travels WHERE user_id = ?',
+      'SELECT t.*, u.name as user_name, u.email as user_email FROM travels t LEFT JOIN users u ON t.user_id = u.id WHERE t.user_id = ?',
       userId
     );
+    console.log(`[SQLiteTravelRepository] Found ${travelRows.length} travels`);
+    travelRows.forEach(row => {
+      console.log(`  - Travel: ${row.id}, UserID: ${row.user_id}, UserName: ${row.user_name}`);
+    });
     return travelRows.map(travelRow => this.mapRowToTravel(travelRow));
   }
 
@@ -87,17 +93,19 @@ export class SQLiteTravelRepository implements ITravelRepository {
   }
 
   private mapRowToTravel(row: any): Travel {
+    const userName = row.user_name ? String(row.user_name).trim() : 'Usuário desconhecido';
+    console.log(`[Travel] ID: ${row.id}, UserID: ${row.user_id}, UserName: ${userName}`);
+    
     return Travel.create(
       row.id,
       row.title,
       row.description,
       new Date(row.date),
       {
-        id: row.user.id,
-        name: { value: row.user.name },
-        email: row.user.email,
-      },
-      // { id: row.user_id } as Partial<User>,
+        id: row.user_id || '',
+        name: { value: userName },
+        email: row.user_email || '',
+      } as Partial<User>,
       row.latitude && row.longitude ? GeoCoordinates.create(row.latitude, row.longitude) : undefined,
       row.photo_url ? Photo.create(row.photo_url) : undefined
     );

@@ -120,9 +120,13 @@ export class SyncService {
             recordRow.title,
             recordRow.description,
             new Date(recordRow.date),
-            { id: recordRow.user_id } as Partial<User>,
+            { 
+              id: recordRow.user_id,
+              name: { value: recordRow.user_name || 'Usuário desconhecido' },
+              email: recordRow.user_email || ''
+            } as Partial<User>,
             GeoCoordinates.create(recordRow.latitude, recordRow.longitude),
-            Photo.create(photoUrl)
+            photoUrl ? Photo.create(photoUrl) : undefined
           );
 
           if (recordRow.sync_status === 'pending_create') {
@@ -132,6 +136,12 @@ export class SyncService {
           }
 
           // Update local DB with synced status and photo URL
+          const db = await DatabaseConnection.getConnection();
+          await db.runAsync(
+            "UPDATE travels SET sync_status = 'synced', photo_url = ? WHERE id = ?",
+            photoUrl,
+            recordRow.id
+          );
         } catch (error) {
           console.error(`Failed to sync travel ${recordRow.id}:`, error);
         }
@@ -212,7 +222,7 @@ export class SyncService {
 
   private async getLocalPendingTravels() {
     const db = await DatabaseConnection.getConnection();
-    return await db.getAllAsync<any>("SELECT * FROM travels WHERE sync_status != 'synced'");
+    return await db.getAllAsync<any>("SELECT t.*, u.name as user_name, u.email as user_email FROM travels t LEFT JOIN users u ON t.user_id = u.id WHERE t.sync_status != 'synced'");
   }
 
   private async getLocalSyncLog() {

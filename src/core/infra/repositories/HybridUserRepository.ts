@@ -109,6 +109,30 @@ export class HybridUserRepository implements IUserRepository {
     }
   }
 
+  async insertOrUpdate(user: User): Promise<void> {
+    // InsertOrUpdate is not part of IUserRepository interface; attempt best-effort if implementations provide it
+    try {
+      if (await this.isOnline()) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        if (this.onlineRepo.insertOrUpdate) {
+          await this.onlineRepo.insertOrUpdate(user);
+        }
+      }
+    } catch (err) {
+      // ignore
+    }
+    try {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      if (this.offlineRepo.insertOrUpdate) {
+        await this.offlineRepo.insertOrUpdate(user);
+      }
+    } catch (err) {
+      // ignore
+    }
+  }
+
   async delete(id: string): Promise<void> {
     // Delete is not part of IUserRepository interface; attempt if available
     try {

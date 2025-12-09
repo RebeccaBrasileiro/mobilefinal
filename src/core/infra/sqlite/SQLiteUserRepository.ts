@@ -104,6 +104,33 @@ export class SQLiteUserRepository implements IUserRepository {
     );
   }
 
+  async insertOrUpdate(user: User): Promise<void> {
+    console.log(`[SQLiteUserRepository] insertOrUpdate called for user: ${user.id}`);
+    const db = await DatabaseConnection.getConnection();
+    const existingUser = await this.findById(user.id);
+    
+    if (existingUser) {
+      console.log(`[SQLiteUserRepository] User exists, updating: ${user.id}`);
+      // User exists, update it
+      await this.update(user);
+    } else {
+      console.log(`[SQLiteUserRepository] User does not exist, inserting: ${user.id} - ${user.name.value}`);
+      // User doesn't exist, insert it
+      const hashedPassword = `hashed_${user.password.value}`;
+      await db.runAsync(
+        'INSERT INTO users (id, name, email, password_hash, latitude, longitude, sync_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        user.id,
+        user.name.value,
+        user.email.value,
+        hashedPassword,
+        user.location.latitude,
+        user.location.longitude,
+        'pending_create'
+      );
+      console.log(`[SQLiteUserRepository] User inserted successfully`);
+    }
+  }
+
   async delete(id: string): Promise<void> {
     const db = await DatabaseConnection.getConnection();
     await db.runAsync("INSERT INTO sync_log (entity_type, entity_id, action) VALUES ('user', ?, 'delete')", id);
