@@ -18,9 +18,6 @@ export function makeTravelUseCases() {
   const travelRepository: ITravelRepository = process.env.EXPO_PUBLIC_USE_API
      ? HybridTravelRepository.getInstance()
     : MockTravelRepository.getInstance();
-
-  console.log(`[makeTravelUseCases] Created with EXPO_PUBLIC_USE_API=${process.env.EXPO_PUBLIC_USE_API}`);
-
   const registerTravel= new RegisterTravel(travelRepository);
   const updateTravel= new UpdateTravel(travelRepository);
   const deleteTravel = new DeleteTravel(travelRepository);
@@ -31,7 +28,6 @@ export function makeTravelUseCases() {
   const supabaseStorageRepository = new SupabaseStorageService
   const uploadFile = new UploadFileUseCase(supabaseStorageRepository)
   const deleteFile = new DeleteFileUseCase(supabaseStorageRepository)
-
   return {
     registerTravel,
     updateTravel,

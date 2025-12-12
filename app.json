@@ -2,7 +2,7 @@
   "expo": {
     "name": "MEMOTRIP",
     "slug": "MEMOTRIP",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,6 +16,11 @@
       "supportsTablet": true
     },
     "android": {
+       "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBlEuwyUq8Sa0mPF0O2d8PD9mwrhBbjI6s"
+        }
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#E3C3FA"

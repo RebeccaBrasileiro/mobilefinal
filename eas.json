@@ -7,15 +7,21 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development"
+      "channel": "development",
+      "android": {
+        "buildType": "apk"
+      }
     },
     "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+        "env": {
+        "EXPO_PUBLIC_GOOGLE_PLACES": "AIzaSyBlEuwyUq8Sa0mPF0O2d8PD9mwrhBbjI6s"
+      },
       "android": {
         "gradleCommand": ":app:assembleRelease"
       }
-
     },
-
     "production": {
       "autoIncrement": true,
       "channel": "production"
